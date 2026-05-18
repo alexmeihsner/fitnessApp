@@ -1,1 +1,4 @@
 stravaAPIFile.txt
+stravaAPIFile.txt
+__pycache__/
+*.pyc

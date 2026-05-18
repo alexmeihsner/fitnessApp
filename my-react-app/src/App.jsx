@@ -19,12 +19,19 @@ async function testAPICall() {
   catch(e){
     console.log("failed to make the fetch request")
   }
-  
-   
-  
-  
 }
 
+async function testStravaAPICall() {
+  try{
+    const x = await fetch("http://127.0.0.1:8000/activities");
+    const data = await x.json();
+    console.log(data);
+    return data;
+  }
+  catch(e){
+    console.log("failed to make the fetch request")
+  }
+}
 function App() {
   return (
     <div className="app-shell">
@@ -53,7 +60,7 @@ function App() {
       <main className="container py-4">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard toBeShown={testAPICall()}/>} />
+          <Route path="/dashboard" element={<Dashboard toBeShown={testAPICall()} stravaCall={testStravaAPICall()}/>} />
           <Route path="/workouts" element={<Workouts />} />
           <Route path="/diet" element={<Diet />} />
         </Routes>

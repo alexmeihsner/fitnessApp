@@ -1,4 +1,4 @@
-function Dashboard(props) {
+function Dashboard(toBeShown, stravaCall) {
   return (
     <section className="page-section">
       <div className="row align-items-center g-4">
