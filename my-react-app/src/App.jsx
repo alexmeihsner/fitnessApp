@@ -9,6 +9,21 @@ const navItems = [
   { path: '/workouts', label: 'Workouts' },
   { path: '/diet', label: 'Diet' },
 ]
+async function testAPICall() {
+  try{
+    const x = await fetch("http://127.0.0.1:8000/");
+    const data = await x.json();
+    console.log(data);
+    return data;
+  }
+  catch(e){
+    console.log("failed to make the fetch request")
+  }
+  
+   
+  
+  
+}
 
 function App() {
   return (
@@ -38,7 +53,7 @@ function App() {
       <main className="container py-4">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard toBeShown={testAPICall()}/>} />
           <Route path="/workouts" element={<Workouts />} />
           <Route path="/diet" element={<Diet />} />
         </Routes>

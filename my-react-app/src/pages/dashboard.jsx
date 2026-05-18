@@ -1,4 +1,4 @@
-function Dashboard() {
+function Dashboard(props) {
   return (
     <section className="page-section">
       <div className="row align-items-center g-4">
@@ -7,6 +7,7 @@ function Dashboard() {
           <p className="lead text-body-secondary">
             Track your fitness progress, recent activity, and daily goals from
             one place.
+            
           </p>
         </div>
       </div>
