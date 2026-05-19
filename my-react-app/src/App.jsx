@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import Dashboard from './pages/dashboard.jsx'
 import Diet from './pages/diet.jsx'
@@ -9,6 +10,15 @@ const navItems = [
   { path: '/workouts', label: 'Workouts' },
   { path: '/diet', label: 'Diet' },
 ]
+const dayToWorkout = {
+  monday: "push",
+  tuesday: "legs",
+  wednesday: "pull",
+  thursday: "rest",
+  friday: "push",
+  saturday: "legs",
+  sunday: "pull"
+}
 async function testAPICall() {
   try{
     const x = await fetch("http://127.0.0.1:8000/");
@@ -32,7 +42,41 @@ async function testStravaAPICall() {
     console.log("failed to make the fetch request")
   }
 }
+function getTodaysWorkout(){
+  const today = new Date();
+  const day = today.toLocaleDateString("en-US", {
+    weekday: "long"
+  }).toLowerCase();
+  return dayToWorkout[day];
+
+}
 function App() {
+  const [isWorking, setIsWorking] = useState(false)
+
+  useEffect(() => {
+    async function backendWorking() {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/working')
+
+        if (!response.ok) {
+          setIsWorking(false)
+          console.log('is not working', response.status)
+          return
+        }
+
+        const data = await response.json()
+
+        setIsWorking(Boolean(data))
+        console.log('is working', data)
+      } catch (error) {
+        setIsWorking(false)
+        console.log('is not working', error)
+      }
+    }
+
+    backendWorking()
+  }, [])
+
   return (
     <div className="app-shell">
       <nav className="navbar navbar-expand bg-body-tertiary border-bottom">
@@ -60,8 +104,8 @@ function App() {
       <main className="container py-4">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard toBeShown={testAPICall()} stravaCall={testStravaAPICall()}/>} />
-          <Route path="/workouts" element={<Workouts />} />
+          <Route path="/dashboard" element={<Dashboard toBeShown={testAPICall()} stravaCall={testStravaAPICall()} typeOfWorkout={getTodaysWorkout()} workoutsByDay={dayToWorkout} backendWorking={isWorking}/>} />
+          <Route path="/workouts" element={<Workouts typeOfWorkout={getTodaysWorkout()} />} />
           <Route path="/diet" element={<Diet />} />
         </Routes>
       </main>

@@ -36,3 +36,7 @@ def get_activities():
             detail=response.text
         )
     return response.json()
+
+@app.get("/working")
+def home():
+    return {"message": "is working"}
