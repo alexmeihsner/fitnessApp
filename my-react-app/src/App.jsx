@@ -3,6 +3,7 @@ import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import Dashboard from './pages/dashboard.jsx'
 import Diet from './pages/diet.jsx'
 import Workouts from './pages/workouts.jsx'
+import { API_BASE_URL } from './config/api.js'
 import './App.css'
 
 const navItems = [
@@ -19,29 +20,6 @@ const dayToWorkout = {
   saturday: "legs",
   sunday: "pull"
 }
-async function testAPICall() {
-  try{
-    const x = await fetch("http://127.0.0.1:8000/");
-    const data = await x.json();
-    console.log(data);
-    return data;
-  }
-  catch(e){
-    console.log("failed to make the fetch request")
-  }
-}
-
-async function testStravaAPICall() {
-  try{
-    const x = await fetch("http://127.0.0.1:8000/activities");
-    const data = await x.json();
-    console.log(data);
-    return data;
-  }
-  catch(e){
-    console.log("failed to make the fetch request")
-  }
-}
 function getTodaysWorkout(){
   const today = new Date();
   const day = today.toLocaleDateString("en-US", {
@@ -56,7 +34,7 @@ function App() {
   useEffect(() => {
     async function backendWorking() {
       try {
-        const response = await fetch('http://127.0.0.1:8000/working')
+        const response = await fetch(`${API_BASE_URL}/working`)
 
         if (!response.ok) {
           setIsWorking(false)
@@ -104,7 +82,7 @@ function App() {
       <main className="container py-4">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard toBeShown={testAPICall()} stravaCall={testStravaAPICall()} typeOfWorkout={getTodaysWorkout()} workoutsByDay={dayToWorkout} backendWorking={isWorking}/>} />
+          <Route path="/dashboard" element={<Dashboard typeOfWorkout={getTodaysWorkout()} workoutsByDay={dayToWorkout} backendWorking={isWorking}/>} />
           <Route path="/workouts" element={<Workouts typeOfWorkout={getTodaysWorkout()} />} />
           <Route path="/diet" element={<Diet />} />
         </Routes>

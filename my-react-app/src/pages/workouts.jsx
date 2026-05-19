@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { API_BASE_URL } from '../config/api.js'
 
 const todayKey = new Date().toLocaleDateString('en-CA')
 
@@ -184,11 +185,7 @@ function getWorkoutPrescription(workout) {
 
 function Workouts({ typeOfWorkout }) {
   const [startIndex, setStartIndex] = useState(0)
-  const [workoutLedger, setWorkoutLedger] = useState(() => {
-    const savedLedger = localStorage.getItem(`workout-ledger-${todayKey}`)
-
-    return savedLedger ? JSON.parse(savedLedger) : []
-  })
+  const [workoutLedger, setWorkoutLedger] = useState([])
   const availableWorkouts = workoutOptions.filter(
     (workout) => workout.type === typeOfWorkout,
   )
@@ -199,15 +196,23 @@ function Workouts({ typeOfWorkout }) {
   })
 
   useEffect(() => {
-    setStartIndex(0)
-  }, [typeOfWorkout])
+    async function loadTodaysWorkouts() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/workouts?date=${todayKey}`)
 
-  useEffect(() => {
-    localStorage.setItem(
-      `workout-ledger-${todayKey}`,
-      JSON.stringify(workoutLedger),
-    )
-  }, [workoutLedger])
+        if (!response.ok) {
+          throw new Error(`Failed with status ${response.status}`)
+        }
+
+        const data = await response.json()
+        setWorkoutLedger(data)
+      } catch (error) {
+        console.log('Failed to load workout ledger', error)
+      }
+    }
+
+    loadTodaysWorkouts()
+  }, [])
 
   function handleArrowClick(direction) {
     if (availableWorkouts.length === 0) {
@@ -223,10 +228,10 @@ function Workouts({ typeOfWorkout }) {
     })
   }
 
-  function handleSelectWorkout(workout) {
+  async function handleSelectWorkout(workout) {
     const prescription = getWorkoutPrescription(workout)
     const selectedWorkout = {
-      id: `${workout.name}-${Date.now()}`,
+      date: todayKey,
       completedAt: new Date().toLocaleTimeString([], {
         hour: 'numeric',
         minute: '2-digit',
@@ -237,10 +242,28 @@ function Workouts({ typeOfWorkout }) {
       reps: prescription.reps,
     }
 
-    setWorkoutLedger((currentLedger) => [
-      selectedWorkout,
-      ...currentLedger,
-    ])
+    try {
+      const response = await fetch(`${API_BASE_URL}/workouts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(selectedWorkout),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed with status ${response.status}`)
+      }
+
+      const savedWorkout = await response.json()
+
+      setWorkoutLedger((currentLedger) => [
+        savedWorkout,
+        ...currentLedger,
+      ])
+    } catch (error) {
+      console.log('Failed to save workout', error)
+    }
   }
 
   return (

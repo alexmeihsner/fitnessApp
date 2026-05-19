@@ -1,4 +1,8 @@
+import sqlite3
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 import requests
 
@@ -6,7 +10,59 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+DB_PATH = Path(__file__).with_name("fitness.db")
+
+
+class WorkoutCreate(BaseModel):
+    date: str
+    name: str
+    type: str
+    sets: int
+    reps: str
+    completedAt: str
+
+
+def get_db_connection():
+    connection = sqlite3.connect(DB_PATH)
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+def init_db():
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS workout_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL,
+                sets INTEGER NOT NULL,
+                reps TEXT NOT NULL,
+                completed_at TEXT NOT NULL
+            )
+            """
+        )
+
+
+def serialize_workout(row):
+    return {
+        "id": row["id"],
+        "date": row["date"],
+        "name": row["name"],
+        "type": row["type"],
+        "sets": row["sets"],
+        "reps": row["reps"],
+        "completedAt": row["completed_at"],
+    }
+
+
+init_db()
+
 #basic template
 @app.get("/")
 def home():
@@ -40,3 +96,48 @@ def get_activities():
 @app.get("/working")
 def home():
     return {"message": "is working"}
+
+
+@app.get("/workouts")
+def get_workouts(date: str):
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, date, name, type, sets, reps, completed_at
+            FROM workout_ledger
+            WHERE date = ?
+            ORDER BY id DESC
+            """,
+            (date,),
+        ).fetchall()
+
+    return [serialize_workout(row) for row in rows]
+
+
+@app.post("/workouts", status_code=201)
+def create_workout(workout: WorkoutCreate):
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO workout_ledger (date, name, type, sets, reps, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                workout.date,
+                workout.name,
+                workout.type,
+                workout.sets,
+                workout.reps,
+                workout.completedAt,
+            ),
+        )
+        row = connection.execute(
+            """
+            SELECT id, date, name, type, sets, reps, completed_at
+            FROM workout_ledger
+            WHERE id = ?
+            """,
+            (cursor.lastrowid,),
+        ).fetchone()
+
+    return serialize_workout(row)

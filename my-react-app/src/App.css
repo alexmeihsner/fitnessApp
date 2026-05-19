@@ -214,6 +214,15 @@
   font-weight: 600;
 }
 
+.dashboard-date-picker {
+  display: grid;
+  min-width: 12rem;
+  gap: 0.35rem;
+  color: #5b667a;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .workout-type {
   border: 1px solid transparent;
 }
@@ -256,5 +265,14 @@
   .workout-arrow {
     width: 2.5rem;
     height: 2.5rem;
+  }
+
+  .dashboard-history .d-flex {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .dashboard-date-picker {
+    width: 100%;
   }
 }
