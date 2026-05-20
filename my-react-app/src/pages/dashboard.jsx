@@ -10,11 +10,61 @@ function formatType(type) {
   return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
+function getRunCalories(run) {
+  if (typeof run.calories === 'number' && run.calories > 0) {
+    return Math.round(run.calories)
+  }
+
+  const bodyWeightKg = 170 / 2.20462
+  const distanceKm = (run.distance ?? 0) / 1000
+
+  return Math.round(bodyWeightKg * distanceKm)
+}
+
+function formatRunDistance(distanceMeters) {
+  const miles = (distanceMeters ?? 0) / 1609.344
+
+  return `${miles.toFixed(2)} mi`
+}
+
+function formatRunDuration(seconds) {
+  const minutes = Math.round((seconds ?? 0) / 60)
+
+  return `${minutes} min`
+}
+
+function formatRunCompletedAt(startDate) {
+  if (!startDate) {
+    return 'today'
+  }
+
+  return new Date(startDate).toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
+  const [todayRun, setTodayRun] = useState(null)
   const [deleteError, setDeleteError] = useState('')
-  const totalCalories = selectedLedger.reduce(
+  const todayRunEntry = todayRun && selectedDate === getDateKey()
+    ? {
+        id: `strava-run-${todayRun.id}`,
+        completedAt: formatRunCompletedAt(todayRun.start_date),
+        name: todayRun.name ?? 'Today\'s Run',
+        type: 'run',
+        distance: formatRunDistance(todayRun.distance),
+        duration: formatRunDuration(todayRun.moving_time),
+        calories: getRunCalories(todayRun),
+        source: 'strava',
+      }
+    : null
+  const displayedLedger = todayRunEntry
+    ? [todayRunEntry, ...selectedLedger]
+    : selectedLedger
+  const totalCalories = displayedLedger.reduce(
     (total, entry) => total + (entry.calories ?? 0),
     0,
   )
@@ -40,6 +90,26 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
 
     loadWorkoutsForDate()
   }, [selectedDate])
+
+  useEffect(() => {
+    async function loadTodaysRun() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/runs`)
+
+        if (!response.ok) {
+          throw new Error(`Failed with status ${response.status}`)
+        }
+
+        const data = await response.json()
+        setTodayRun(data.run)
+      } catch (error) {
+        console.log('There was an error getting today\'s run', error)
+        setTodayRun(null)
+      }
+    }
+
+    loadTodaysRun()
+  }, [])
 
   function handleDateChange(event) {
     setSelectedDate(event.target.value)
@@ -73,7 +143,6 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
       }
     }
   }
-
   return (
     <section className="page-section">
       <div className="row align-items-start g-4">
@@ -110,14 +179,14 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
 
             <div className="ledger-summary mb-3">
               <span className="badge text-bg-light border">
-                {selectedLedger.length} completed
+                {displayedLedger.length} completed
               </span>
               <span className="badge text-bg-light border">
                 {totalCalories} calories
               </span>
             </div>
 
-            {selectedLedger.length === 0 ? (
+            {displayedLedger.length === 0 ? (
               <div className="ledger-empty">
                 No workouts found for this day.
               </div>
@@ -130,7 +199,7 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
                 )}
 
                 <div className="ledger-list">
-                  {selectedLedger.map((entry) => (
+                  {displayedLedger.map((entry) => (
                     <article className="ledger-entry" key={entry.id}>
                       <div className="ledger-entry-content">
                         <div className="ledger-entry-details">
@@ -145,21 +214,32 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
                           </div>
 
                           <div className="ledger-stats mt-3">
-                            <span>{entry.sets ?? 3} sets</span>
-                            <span>{entry.reps ?? '8-12'} reps</span>
+                            {entry.source === 'strava' ? (
+                              <>
+                                <span>{entry.distance}</span>
+                                <span>{entry.duration}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>{entry.sets ?? 3} sets</span>
+                                <span>{entry.reps ?? '8-12'} reps</span>
+                              </>
+                            )}
                             <span>{entry.calories ?? 0} calories</span>
                           </div>
                         </div>
 
-                        <div className="ledger-entry-actions">
-                          <button
-                            className="btn btn-outline-danger btn-sm"
-                            type="button"
-                            onClick={() => handleDeleteWorkout(entry.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        {entry.source !== 'strava' && (
+                          <div className="ledger-entry-actions">
+                            <button
+                              className="btn btn-outline-danger btn-sm"
+                              type="button"
+                              onClick={() => handleDeleteWorkout(entry.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </article>
                   ))}

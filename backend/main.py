@@ -1,20 +1,30 @@
 import sqlite3
+from datetime import datetime, timedelta, time
 from pathlib import Path
+from urllib.parse import urlencode
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://alexandermeihsner.github.io",
+    ],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
 
 DB_PATH = Path(__file__).with_name("fitness.db")
+STRAVA_REQUIRED_SCOPES = ["read", "activity:read_all"]
 
 
 class WorkoutCreate(BaseModel):
@@ -82,28 +92,125 @@ def home():
 
 url = "https://www.strava.com/api/v3/athlete/activities"
 def get_strava_key():
+    vals = []
     with open("../stravaAPIFile.txt", "r") as f:
-        return f.readline().strip()
+        for line in f:
+            vals.append(line.strip())
+        return vals
 #making strava calls
+
+
+@app.get("/strava-auth-url")
+def get_strava_auth_url(client_id: str, redirect_uri: str = "http://localhost"):
+    params = {
+        "client_id": client_id,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "approval_prompt": "force",
+        "scope": ",".join(STRAVA_REQUIRED_SCOPES),
+    }
+
+    return {
+        "authorizationUrl": f"https://www.strava.com/oauth/authorize?{urlencode(params)}",
+        "requiredScopes": STRAVA_REQUIRED_SCOPES,
+    }
 
 #getting the API KEY
 @app.get("/activities")
 def get_activities():
-    url = f"https://www.strava.com/api/v3/athlete?access_token={get_strava_key()}"
+    auth_url = "https://www.strava.com/oauth/token"
+    vals = get_strava_key()
+    payload = {
+        "client_id": vals[0],
+        "client_secret": vals[1],
+        "refresh_token": vals[2],
+        "grant_type": "refresh_token",
+    }
+
+    token_response = requests.post(auth_url, data=payload)
+    url = f"https://www.strava.com/api/v3/athlete?access_token={token_response}"
 
     headers = {
-        "access_token": f"{get_strava_key()}"
+        "access_token": f"{token_response}"
     }
 
     response = requests.get(url, headers=headers)
 
     if response.status_code != 200:
         print(response.text)
+        print("didnt work")
         raise HTTPException(
             status_code=response.status_code,
             detail=response.text
         )
+    print("worked")
     return response.json()
+@app.get("/runs")
+def get_runs():
+    auth_url = "https://www.strava.com/oauth/token"
+    activities_url = "https://www.strava.com/api/v3/athlete/activities"
+    vals = get_strava_key()
+    payload = {
+        "client_id": vals[0],
+        "client_secret": vals[1],
+        "refresh_token": vals[2],
+        "grant_type": "refresh_token",
+    }
+
+    token_response = requests.post(auth_url, data=payload)
+
+    if token_response.status_code != 200:
+        raise HTTPException(
+            status_code=token_response.status_code,
+            detail=token_response.text,
+        )
+
+    token_data = token_response.json()
+    access_token = token_data.get("access_token")
+
+    if not access_token:
+        raise HTTPException(
+            status_code=400,
+            detail=token_data,
+        )
+
+    timezone = ZoneInfo("America/Chicago")
+    today = datetime.now(timezone).date()
+    start_of_today = datetime.combine(today, time.min, tzinfo=timezone)
+    start_of_tomorrow = start_of_today + timedelta(days=1)
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {
+        "before": int(start_of_tomorrow.timestamp()),
+        "after": int(start_of_today.timestamp()),
+        "page": 1,
+        "per_page": 30,
+    }
+    activities_response = requests.get(
+        activities_url,
+        headers=headers,
+        params=params,
+    )
+    print("ACTIVITIES STATUS:", activities_response.status_code)
+    print("ACTIVITIES RESPONSE:", activities_response.text)
+
+    if activities_response.status_code != 200:
+        raise HTTPException(
+            status_code=activities_response.status_code,
+            detail=activities_response.text,
+        )
+
+    activities = activities_response.json()
+    today_run = next(
+        (
+            activity for activity in activities
+            if activity.get("type") == "Run"
+        ),
+        None,
+    )
+
+    return {"run": today_run}
+
 
 @app.get("/working")
 def home():
@@ -168,3 +275,4 @@ def delete_workout(workout_id: int):
         raise HTTPException(status_code=404, detail="Workout not found")
 
     return {"deleted": True, "id": workout_id}
+get_runs()

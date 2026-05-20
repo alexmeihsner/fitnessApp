@@ -271,6 +271,12 @@
   color: #6f42c1;
 }
 
+.workout-type-run {
+  border-color: #ffc7d1;
+  background: #fff0f3;
+  color: #d6336c;
+}
+
 @media (max-width: 576px) {
   .navbar .container {
     align-items: flex-start;
