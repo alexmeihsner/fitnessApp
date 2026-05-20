@@ -183,9 +183,47 @@ function getWorkoutPrescription(workout) {
   return prescriptions[workout.type]
 }
 
+function getEstimatedCalories(workout) {
+  const bodyWeightKg = 170 / 2.20462
+  const durationHours = 10 / 60
+  const metByWorkout = {
+    'Bench Press': 6,
+    'Overhead Press': 6,
+    'Incline Dumbbell Press': 6,
+    'Push-Ups': 7,
+    Dips: 7,
+    'Lateral Raises': 3.5,
+    'Pull-Ups': 8,
+    'Bent-Over Row': 6,
+    'Lat Pulldown': 5,
+    'Seated Cable Row': 5,
+    'Face Pulls': 3.5,
+    'Dumbbell Curls': 3.5,
+    'Back Squat': 6,
+    'Romanian Deadlift': 6,
+    'Walking Lunges': 6.5,
+    'Leg Press': 5,
+    'Bulgarian Split Squat': 6.5,
+    'Calf Raises': 3.5,
+    'Mobility Flow': 2.5,
+    'Easy Walk': 3.5,
+    'Zone 2 Bike': 6.8,
+    'Yoga Recovery': 2.5,
+    'Foam Rolling': 2.3,
+    'Core Reset': 3.8,
+  }
+  const met = metByWorkout[workout.name] ?? 4
+
+  return Math.round(met * bodyWeightKg * durationHours)
+}
+
 function Workouts({ typeOfWorkout }) {
   const [startIndex, setStartIndex] = useState(0)
   const [workoutLedger, setWorkoutLedger] = useState([])
+  const totalCalories = workoutLedger.reduce(
+    (total, entry) => total + (entry.calories ?? 0),
+    0,
+  )
   const availableWorkouts = workoutOptions.filter(
     (workout) => workout.type === typeOfWorkout,
   )
@@ -240,6 +278,7 @@ function Workouts({ typeOfWorkout }) {
       type: workout.type,
       sets: prescription.sets,
       reps: prescription.reps,
+      calories: getEstimatedCalories(workout),
     }
 
     try {
@@ -263,6 +302,24 @@ function Workouts({ typeOfWorkout }) {
       ])
     } catch (error) {
       console.log('Failed to save workout', error)
+    }
+  }
+
+  async function handleDeleteWorkout(workoutId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/workouts/${workoutId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed with status ${response.status}`)
+      }
+
+      setWorkoutLedger((currentLedger) =>
+        currentLedger.filter((item) => item.id !== workoutId),
+      )
+    } catch (error) {
+      console.log('Failed to delete workout', error)
     }
   }
 
@@ -334,9 +391,14 @@ function Workouts({ typeOfWorkout }) {
               Selected workouts, sets, reps, and time for today.
             </p>
           </div>
-          <span className="badge text-bg-light border">
-            {workoutLedger.length} completed
-          </span>
+          <div className="ledger-summary">
+            <span className="badge text-bg-light border">
+              {workoutLedger.length} completed
+            </span>
+            <span className="badge text-bg-light border">
+              {totalCalories} calories
+            </span>
+          </div>
         </div>
 
         {workoutLedger.length === 0 ? (
@@ -347,21 +409,34 @@ function Workouts({ typeOfWorkout }) {
           <div className="ledger-list">
             {workoutLedger.map((entry) => (
               <article className="ledger-entry" key={entry.id}>
-                <div className="d-flex align-items-start justify-content-between gap-3">
-                  <div>
-                    <span className={`badge workout-type workout-type-${entry.type}`}>
-                      {formatType(entry.type)}
-                    </span>
-                    <h3 className="h5 mt-2 mb-1">{entry.name}</h3>
-                    <p className="text-body-secondary mb-0">
-                      Added at {entry.completedAt}
-                    </p>
-                  </div>
-                </div>
+                <div className="ledger-entry-content">
+                  <div className="ledger-entry-details">
+                    <div>
+                      <span className={`badge workout-type workout-type-${entry.type}`}>
+                        {formatType(entry.type)}
+                      </span>
+                      <h3 className="h5 mt-2 mb-1">{entry.name}</h3>
+                      <p className="text-body-secondary mb-0">
+                        Added at {entry.completedAt}
+                      </p>
+                    </div>
 
-                <div className="ledger-stats mt-3">
-                  <span>{entry.sets ?? 3} sets</span>
-                  <span>{entry.reps ?? '8-12'} reps</span>
+                    <div className="ledger-stats mt-3">
+                      <span>{entry.sets ?? 3} sets</span>
+                      <span>{entry.reps ?? '8-12'} reps</span>
+                      <span>{entry.calories ?? 0} calories</span>
+                    </div>
+                  </div>
+
+                  <div className="ledger-entry-actions">
+                    <button 
+                      className="btn btn-outline-danger btn-sm"
+                      type="button"
+                      onClick={() => handleDeleteWorkout(entry.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}

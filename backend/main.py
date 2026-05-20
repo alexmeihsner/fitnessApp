@@ -23,6 +23,7 @@ class WorkoutCreate(BaseModel):
     type: str
     sets: int
     reps: str
+    calories: int
     completedAt: str
 
 
@@ -43,10 +44,20 @@ def init_db():
                 type TEXT NOT NULL,
                 sets INTEGER NOT NULL,
                 reps TEXT NOT NULL,
+                calories INTEGER NOT NULL DEFAULT 0,
                 completed_at TEXT NOT NULL
             )
             """
         )
+        columns = connection.execute(
+            "PRAGMA table_info(workout_ledger)"
+        ).fetchall()
+        column_names = {column["name"] for column in columns}
+
+        if "calories" not in column_names:
+            connection.execute(
+                "ALTER TABLE workout_ledger ADD COLUMN calories INTEGER NOT NULL DEFAULT 0"
+            )
 
 
 def serialize_workout(row):
@@ -57,6 +68,7 @@ def serialize_workout(row):
         "type": row["type"],
         "sets": row["sets"],
         "reps": row["reps"],
+        "calories": row["calories"],
         "completedAt": row["completed_at"],
     }
 
@@ -103,7 +115,7 @@ def get_workouts(date: str):
     with get_db_connection() as connection:
         rows = connection.execute(
             """
-            SELECT id, date, name, type, sets, reps, completed_at
+            SELECT id, date, name, type, sets, reps, calories, completed_at
             FROM workout_ledger
             WHERE date = ?
             ORDER BY id DESC
@@ -119,8 +131,8 @@ def create_workout(workout: WorkoutCreate):
     with get_db_connection() as connection:
         cursor = connection.execute(
             """
-            INSERT INTO workout_ledger (date, name, type, sets, reps, completed_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO workout_ledger (date, name, type, sets, reps, calories, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 workout.date,
@@ -128,12 +140,13 @@ def create_workout(workout: WorkoutCreate):
                 workout.type,
                 workout.sets,
                 workout.reps,
+                workout.calories,
                 workout.completedAt,
             ),
         )
         row = connection.execute(
             """
-            SELECT id, date, name, type, sets, reps, completed_at
+            SELECT id, date, name, type, sets, reps, calories, completed_at
             FROM workout_ledger
             WHERE id = ?
             """,
@@ -141,3 +154,17 @@ def create_workout(workout: WorkoutCreate):
         ).fetchone()
 
     return serialize_workout(row)
+
+
+@app.delete("/workouts/{workout_id}")
+def delete_workout(workout_id: int):
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            "DELETE FROM workout_ledger WHERE id = ?",
+            (workout_id,),
+        )
+
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Workout not found")
+
+    return {"deleted": True, "id": workout_id}

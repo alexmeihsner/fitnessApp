@@ -13,6 +13,11 @@ function formatType(type) {
 function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
+  const [deleteError, setDeleteError] = useState('')
+  const totalCalories = selectedLedger.reduce(
+    (total, entry) => total + (entry.calories ?? 0),
+    0,
+  )
 
   useEffect(() => {
     async function loadWorkoutsForDate() {
@@ -38,6 +43,35 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
 
   function handleDateChange(event) {
     setSelectedDate(event.target.value)
+  }
+
+  async function handleDeleteWorkout(workoutId) {
+    const workoutToDelete = selectedLedger.find((entry) => entry.id === workoutId)
+
+    setDeleteError('')
+    setSelectedLedger((currentLedger) =>
+      currentLedger.filter((item) => item.id !== workoutId),
+    )
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/workouts/${workoutId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed with status ${response.status}`)
+      }
+    } catch (error) {
+      console.log('Failed to delete workout', error)
+      setDeleteError('Could not delete that workout. Check that the backend is running and has been restarted.')
+
+      if (workoutToDelete) {
+        setSelectedLedger((currentLedger) => [
+          workoutToDelete,
+          ...currentLedger,
+        ])
+      }
+    }
   }
 
   return (
@@ -74,33 +108,63 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
               </label>
             </div>
 
+            <div className="ledger-summary mb-3">
+              <span className="badge text-bg-light border">
+                {selectedLedger.length} completed
+              </span>
+              <span className="badge text-bg-light border">
+                {totalCalories} calories
+              </span>
+            </div>
+
             {selectedLedger.length === 0 ? (
               <div className="ledger-empty">
                 No workouts found for this day.
               </div>
             ) : (
-              <div className="ledger-list">
-                {selectedLedger.map((entry) => (
-                  <article className="ledger-entry" key={entry.id}>
-                    <div className="d-flex align-items-start justify-content-between gap-3">
-                      <div>
-                        <span className={`badge workout-type workout-type-${entry.type}`}>
-                          {formatType(entry.type)}
-                        </span>
-                        <h3 className="h5 mt-2 mb-1">{entry.name}</h3>
-                        <p className="text-body-secondary mb-0">
-                          Added at {entry.completedAt}
-                        </p>
-                      </div>
-                    </div>
+              <>
+                {deleteError && (
+                  <div className="alert alert-warning" role="alert">
+                    {deleteError}
+                  </div>
+                )}
 
-                    <div className="ledger-stats mt-3">
-                      <span>{entry.sets ?? 3} sets</span>
-                      <span>{entry.reps ?? '8-12'} reps</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                <div className="ledger-list">
+                  {selectedLedger.map((entry) => (
+                    <article className="ledger-entry" key={entry.id}>
+                      <div className="ledger-entry-content">
+                        <div className="ledger-entry-details">
+                          <div>
+                            <span className={`badge workout-type workout-type-${entry.type}`}>
+                              {formatType(entry.type)}
+                            </span>
+                            <h3 className="h5 mt-2 mb-1">{entry.name}</h3>
+                            <p className="text-body-secondary mb-0">
+                              Added at {entry.completedAt}
+                            </p>
+                          </div>
+
+                          <div className="ledger-stats mt-3">
+                            <span>{entry.sets ?? 3} sets</span>
+                            <span>{entry.reps ?? '8-12'} reps</span>
+                            <span>{entry.calories ?? 0} calories</span>
+                          </div>
+                        </div>
+
+                        <div className="ledger-entry-actions">
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            type="button"
+                            onClick={() => handleDeleteWorkout(entry.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </>
             )}
           </section>
         </div>
