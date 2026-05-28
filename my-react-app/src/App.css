@@ -19,6 +19,39 @@
   padding: 2rem 0;
 }
 
+.diet-grid {
+  display: grid;
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.diet-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.diet-calorie-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #d7deea;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  color: #5b667a;
+}
+
+.diet-calorie-preview strong {
+  color: #172033;
+  font-size: 1.5rem;
+}
+
 .calendar-day {
   height: 100%;
   padding: 1rem;
@@ -159,6 +192,12 @@
   font-weight: 600;
 }
 
+.workout-calories {
+  color: #5b667a;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .workout-video-link {
   display: inline-flex;
   width: fit-content;
@@ -286,6 +325,10 @@
 
   .workout-carousel {
     gap: 0.5rem;
+  }
+
+  .diet-grid {
+    grid-template-columns: 1fr;
   }
 
   .workout-arrow {

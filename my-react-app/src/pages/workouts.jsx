@@ -29,6 +29,18 @@ const workoutOptions = [
     equipment: 'Bodyweight',
   },
   {
+    name: 'Peck fly',
+    type: 'push',
+    focus: 'Chest, anterior delts',
+    equipment: 'Pec fly machine'
+  },
+  {
+    name: 'Reverse peck fly',
+    type: 'pull',
+    focus: 'rear shoulders, upper back',
+    equipment: 'Pec fly machine'
+  },
+  {
     name: 'Dips',
     type: 'push',
     focus: 'Chest, triceps',
@@ -75,6 +87,12 @@ const workoutOptions = [
     type: 'pull',
     focus: 'Biceps',
     equipment: 'Dumbbells',
+  },
+  {
+    name: 'Rowing Machine',
+    type: 'pull',
+    focus: 'Biceps, rear delts',
+    equipment: 'Rowing machine'
   },
   {
     name: 'Back Squat',
@@ -161,6 +179,13 @@ function getYoutubeLink(workoutName) {
 }
 
 function getWorkoutPrescription(workout) {
+  if (workout.name === 'Rowing Machine') {
+    return {
+      sets: 1,
+      reps: '15 minutes',
+    }
+  }
+
   const prescriptions = {
     push: {
       sets: 3,
@@ -183,15 +208,21 @@ function getWorkoutPrescription(workout) {
   return prescriptions[workout.type]
 }
 
+function getWorkoutDurationMinutes(workout) {
+  return workout.name === 'Rowing Machine' ? 15 : 10
+}
+
 function getEstimatedCalories(workout) {
   const bodyWeightKg = 170 / 2.20462
-  const durationHours = 10 / 60
+  const durationHours = getWorkoutDurationMinutes(workout) / 60
   const metByWorkout = {
     'Bench Press': 6,
     'Overhead Press': 6,
     'Incline Dumbbell Press': 6,
     'Push-Ups': 7,
-    Dips: 7,
+    'Peck fly': 3.5,
+    'Reverse peck fly': 3.5,
+    'Dips': 7,
     'Lateral Raises': 3.5,
     'Pull-Ups': 8,
     'Bent-Over Row': 6,
@@ -199,6 +230,7 @@ function getEstimatedCalories(workout) {
     'Seated Cable Row': 5,
     'Face Pulls': 3.5,
     'Dumbbell Curls': 3.5,
+    'Rowing Machine': 7,
     'Back Squat': 6,
     'Romanian Deadlift': 6,
     'Walking Lunges': 6.5,
@@ -354,6 +386,9 @@ function Workouts({ typeOfWorkout }) {
               <h2 className="h5 mt-3 mb-2">{workout.name}</h2>
               <p className="workout-focus">{workout.focus}</p>
               <p className="workout-equipment mb-0">{workout.equipment}</p>
+              <p className="workout-calories mb-2">
+                {getEstimatedCalories(workout)} calories / {getWorkoutDurationMinutes(workout)} min
+              </p>
               <a
                 className="workout-video-link"
                 href={getYoutubeLink(workout.name)}
