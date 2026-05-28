@@ -47,22 +47,22 @@ function formatRunCompletedAt(startDate) {
 function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
-  const [todayRun, setTodayRun] = useState(null)
+  const [selectedRun, setSelectedRun] = useState(null)
   const [deleteError, setDeleteError] = useState('')
-  const todayRunEntry = todayRun && selectedDate === getDateKey()
+  const selectedRunEntry = selectedRun
     ? {
-        id: `strava-run-${todayRun.id}`,
-        completedAt: formatRunCompletedAt(todayRun.start_date),
-        name: todayRun.name ?? 'Today\'s Run',
+        id: `strava-run-${selectedRun.id}`,
+        completedAt: formatRunCompletedAt(selectedRun.start_date),
+        name: selectedRun.name ?? 'Run',
         type: 'run',
-        distance: formatRunDistance(todayRun.distance),
-        duration: formatRunDuration(todayRun.moving_time),
-        calories: getRunCalories(todayRun),
+        distance: formatRunDistance(selectedRun.distance),
+        duration: formatRunDuration(selectedRun.moving_time),
+        calories: getRunCalories(selectedRun),
         source: 'strava',
       }
     : null
-  const displayedLedger = todayRunEntry
-    ? [todayRunEntry, ...selectedLedger]
+  const displayedLedger = selectedRunEntry
+    ? [selectedRunEntry, ...selectedLedger]
     : selectedLedger
   const totalCalories = displayedLedger.reduce(
     (total, entry) => total + (entry.calories ?? 0),
@@ -92,24 +92,24 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   }, [selectedDate])
 
   useEffect(() => {
-    async function loadTodaysRun() {
+    async function loadRunForDate() {
       try {
-        const response = await fetch(`${API_BASE_URL}/runs`)
+        const response = await fetch(`${API_BASE_URL}/runs?date=${selectedDate}`)
 
         if (!response.ok) {
           throw new Error(`Failed with status ${response.status}`)
         }
 
         const data = await response.json()
-        setTodayRun(data.run)
+        setSelectedRun(data.run)
       } catch (error) {
-        console.log('There was an error getting today\'s run', error)
-        setTodayRun(null)
+        console.log('There was an error getting the selected date run', error)
+        setSelectedRun(null)
       }
     }
 
-    loadTodaysRun()
-  }, [])
+    loadRunForDate()
+  }, [selectedDate])
 
   function handleDateChange(event) {
     setSelectedDate(event.target.value)

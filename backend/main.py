@@ -142,7 +142,7 @@ def get_activities():
     print("worked")
     return response.json()
 @app.get("/runs")
-def get_runs():
+def get_runs(date: str | None = None):
     auth_url = "https://www.strava.com/oauth/token"
     activities_url = "https://www.strava.com/api/v3/athlete/activities"
     vals = get_strava_key()
@@ -171,14 +171,19 @@ def get_runs():
         )
 
     timezone = ZoneInfo("America/Chicago")
-    today = datetime.now(timezone).date()
-    start_of_today = datetime.combine(today, time.min, tzinfo=timezone)
-    start_of_tomorrow = start_of_today + timedelta(days=1)
+
+    if date:
+        selected_day = datetime.strptime(date, "%Y-%m-%d").date()
+    else:
+        selected_day = datetime.now(timezone).date()
+
+    start_of_day = datetime.combine(selected_day, time.min, tzinfo=timezone)
+    start_of_next_day = start_of_day + timedelta(days=1)
 
     headers = {"Authorization": f"Bearer {access_token}"}
     params = {
-        "before": int(start_of_tomorrow.timestamp()),
-        "after": int(start_of_today.timestamp()),
+        "before": int(start_of_next_day.timestamp()),
+        "after": int(start_of_day.timestamp()),
         "page": 1,
         "per_page": 30,
     }
