@@ -44,6 +44,15 @@ function formatRunCompletedAt(startDate) {
   })
 }
 
+function formatSelectedDate(dateKey) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString([], {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
@@ -213,24 +222,35 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
         </div>
 
         <div className="col-12">
+          <section className="dashboard-date-panel">
+            <div>
+              <h2 className="h3 mb-1">History Calendar</h2>
+              <p className="text-body-secondary mb-0">
+                Showing workout and diet history for {formatSelectedDate(selectedDate)}.
+              </p>
+            </div>
+
+            <label className="dashboard-date-picker">
+              <span>Date</span>
+              <input
+                className="form-control"
+                type="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+              />
+            </label>
+          </section>
+        </div>
+
+        <div className="col-12">
           <section className="workout-ledger dashboard-history">
             <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
               <div>
                 <h2 className="h3 mb-1">Workout History</h2>
                 <p className="text-body-secondary mb-0">
-                  Select a day to see the workouts completed that day.
+                  Workouts completed on the selected day.
                 </p>
               </div>
-
-              <label className="dashboard-date-picker">
-                <span>Date</span>
-                <input
-                  className="form-control"
-                  type="date"
-                  value={selectedDate}
-                  onChange={handleDateChange}
-                />
-              </label>
             </div>
 
             <div className="ledger-summary mb-3">

@@ -282,6 +282,17 @@
   font-weight: 600;
 }
 
+.dashboard-date-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #d7deea;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
 .workout-type {
   border: 1px solid transparent;
 }
@@ -343,6 +354,11 @@
 
   .dashboard-date-picker {
     width: 100%;
+  }
+
+  .dashboard-date-panel {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .ledger-summary {
