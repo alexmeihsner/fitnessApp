@@ -33,6 +33,16 @@ class WorkoutCreate(BaseModel):
     completedAt: str
 
 
+class AddFood(BaseModel):
+    date: str
+    name: str
+    amount: float
+    serving: str
+    calories: int
+    addedAt: str
+
+
+
 def get_db_connection():
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
@@ -64,6 +74,51 @@ def init_db():
             connection.execute(
                 "ALTER TABLE workout_ledger ADD COLUMN calories INTEGER NOT NULL DEFAULT 0"
             )
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS food_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                name TEXT NOT NULL,
+                amount REAL NOT NULL,
+                serving TEXT NOT NULL,
+                calories INTEGER NOT NULL DEFAULT 0,
+                added_at TEXT NOT NULL
+            )
+            """)
+        food_columns = connection.execute(
+            "PRAGMA table_info(food_ledger)"
+        ).fetchall()
+        food_column_types = {
+            column["name"]: column["type"].upper()
+            for column in food_columns
+        }
+
+        if (
+            food_column_types.get("amount") != "REAL"
+            or food_column_types.get("serving") != "TEXT"
+        ):
+            connection.execute(
+                """
+                CREATE TABLE food_ledger_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    serving TEXT NOT NULL,
+                    calories INTEGER NOT NULL DEFAULT 0,
+                    added_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO food_ledger_new (id, date, name, amount, serving, calories, added_at)
+                SELECT id, date, name, amount, serving, calories, added_at
+                FROM food_ledger
+                """
+            )
+            connection.execute("DROP TABLE food_ledger")
+            connection.execute("ALTER TABLE food_ledger_new RENAME TO food_ledger")
 
 
 def serialize_workout(row):
@@ -76,6 +131,18 @@ def serialize_workout(row):
         "reps": row["reps"],
         "calories": row["calories"],
         "completedAt": row["completed_at"],
+    }
+
+
+def serialize_food(row):
+    return {
+        "id": row["id"],
+        "date": row["date"],
+        "name": row["name"],
+        "amount": row["amount"],
+        "serving": row["serving"],
+        "calories": row["calories"],
+        "addedAt": row["added_at"],
     }
 
 
@@ -264,6 +331,57 @@ def create_workout(workout: WorkoutCreate):
     return serialize_workout(row)
 
 
+@app.get("/foods")
+def get_foods(date: str):
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, date, name, amount, serving, calories, added_at
+            FROM food_ledger
+            WHERE date = ?
+            ORDER BY id DESC
+            """,
+            (date,),
+        ).fetchall()
+
+    return [serialize_food(row) for row in rows]
+
+
+@app.post("/foods", status_code=201)
+def add_food(food: AddFood):
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO food_ledger (date, name, amount, serving, calories, added_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                food.date,
+                food.name,
+                food.amount,
+                food.serving,
+                food.calories,
+                food.addedAt,
+            ),
+        )
+
+        row = connection.execute(
+            """
+            SELECT id, date, name, amount, serving, calories, added_at
+            FROM food_ledger
+            WHERE id = ?
+            """,
+            (cursor.lastrowid,),
+        ).fetchone()
+
+    return serialize_food(row)
+
+
+@app.post("/addfood", status_code=201)
+def add_food_legacy(food: AddFood):
+    return add_food(food)
+
+
 @app.delete("/workouts/{workout_id}")
 def delete_workout(workout_id: int):
     with get_db_connection() as connection:
@@ -276,4 +394,17 @@ def delete_workout(workout_id: int):
         raise HTTPException(status_code=404, detail="Workout not found")
 
     return {"deleted": True, "id": workout_id}
-get_runs()
+
+
+@app.delete("/foods/{food_id}")
+def delete_food(food_id: int):
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            "DELETE FROM food_ledger WHERE id = ?",
+            (food_id,),
+        )
+
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Food not found")
+
+    return {"deleted": True, "id": food_id}
