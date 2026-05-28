@@ -47,8 +47,10 @@ function formatRunCompletedAt(startDate) {
 function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
+  const [selectedFoodLedger, setSelectedFoodLedger] = useState([])
   const [selectedRun, setSelectedRun] = useState(null)
   const [deleteError, setDeleteError] = useState('')
+  const [foodDeleteError, setFoodDeleteError] = useState('')
   const selectedRunEntry = selectedRun
     ? {
         id: `strava-run-${selectedRun.id}`,
@@ -65,6 +67,10 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
     ? [selectedRunEntry, ...selectedLedger]
     : selectedLedger
   const totalCalories = displayedLedger.reduce(
+    (total, entry) => total + (entry.calories ?? 0),
+    0,
+  )
+  const totalFoodCalories = selectedFoodLedger.reduce(
     (total, entry) => total + (entry.calories ?? 0),
     0,
   )
@@ -111,6 +117,26 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
     loadRunForDate()
   }, [selectedDate])
 
+  useEffect(() => {
+    async function loadFoodsForDate() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/foods?date=${selectedDate}`)
+
+        if (!response.ok) {
+          throw new Error(`Failed with status ${response.status}`)
+        }
+
+        const data = await response.json()
+        setSelectedFoodLedger(data)
+      } catch (error) {
+        console.log('Failed to load foods for date', error)
+        setSelectedFoodLedger([])
+      }
+    }
+
+    loadFoodsForDate()
+  }, [selectedDate])
+
   function handleDateChange(event) {
     setSelectedDate(event.target.value)
   }
@@ -143,6 +169,36 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
       }
     }
   }
+
+  async function handleDeleteFood(foodId) {
+    const foodToDelete = selectedFoodLedger.find((entry) => entry.id === foodId)
+
+    setFoodDeleteError('')
+    setSelectedFoodLedger((currentLedger) =>
+      currentLedger.filter((item) => item.id !== foodId),
+    )
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/foods/${foodId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed with status ${response.status}`)
+      }
+    } catch (error) {
+      console.log('Failed to delete food', error)
+      setFoodDeleteError('Could not delete that food. Check that the backend is running and has been restarted.')
+
+      if (foodToDelete) {
+        setSelectedFoodLedger((currentLedger) => [
+          foodToDelete,
+          ...currentLedger,
+        ])
+      }
+    }
+  }
+
   return (
     <section className="page-section">
       <div className="row align-items-start g-4">
@@ -240,6 +296,77 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
                             </button>
                           </div>
                         )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+
+        <div className="col-12">
+          <section className="workout-ledger dashboard-history">
+            <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
+              <div>
+                <h2 className="h3 mb-1">Diet History</h2>
+                <p className="text-body-secondary mb-0">
+                  Foods logged for the selected day.
+                </p>
+              </div>
+            </div>
+
+            <div className="ledger-summary mb-3">
+              <span className="badge text-bg-light border">
+                {selectedFoodLedger.length} foods
+              </span>
+              <span className="badge text-bg-light border">
+                {totalFoodCalories} calories
+              </span>
+            </div>
+
+            {selectedFoodLedger.length === 0 ? (
+              <div className="ledger-empty">
+                No foods found for this day.
+              </div>
+            ) : (
+              <>
+                {foodDeleteError && (
+                  <div className="alert alert-warning" role="alert">
+                    {foodDeleteError}
+                  </div>
+                )}
+
+                <div className="ledger-list">
+                  {selectedFoodLedger.map((entry) => (
+                    <article className="ledger-entry" key={entry.id}>
+                      <div className="ledger-entry-content">
+                        <div className="ledger-entry-details">
+                          <div>
+                            <span className="badge text-bg-success">
+                              Food
+                            </span>
+                            <h3 className="h5 mt-2 mb-1">{entry.name}</h3>
+                            <p className="text-body-secondary mb-0">
+                              Added at {entry.addedAt}
+                            </p>
+                          </div>
+
+                          <div className="ledger-stats mt-3">
+                            <span>{entry.amount} {entry.serving}</span>
+                            <span>{entry.calories ?? 0} calories</span>
+                          </div>
+                        </div>
+
+                        <div className="ledger-entry-actions">
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            type="button"
+                            onClick={() => handleDeleteFood(entry.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </article>
                   ))}
