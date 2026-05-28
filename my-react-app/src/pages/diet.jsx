@@ -10,14 +10,14 @@ const foodOptions = [
     caloriesPerServing: 47,
   },
   {
-    name: 'White Rice',
-    serving: 'cup',
-    caloriesPerServing: 205,
+    name: 'Steak Serloin',
+    serving: 'oz',
+    caloriesPerServing: 55,
   },
   {
-    name: 'Egg',
-    serving: 'egg',
-    caloriesPerServing: 72,
+    name: 'Brown Rice',
+    serving: 'cup',
+    caloriesPerServing: 210,
   },
   {
     name: 'Greek Yogurt',
@@ -30,10 +30,15 @@ const foodOptions = [
     caloriesPerServing: 105,
   },
   {
-    name: 'Peanut Butter',
-    serving: 'tbsp',
-    caloriesPerServing: 95,
+    name: 'Spinich',
+    serving: 'oz',
+    caloriesPerServing: 6,
   },
+  {
+    name: 'Cherry Totatoes',
+    serving: 'handfull',
+    caloriesPerServing: '30',
+  }
 ]
 
 function Diet() {
