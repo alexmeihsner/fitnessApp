@@ -6,8 +6,8 @@ const todayKey = new Date().toLocaleDateString('en-CA')
 const foodOptions = [
   {
     name: 'Chicken Breast',
-    serving: 'oz',
-    caloriesPerServing: 47,
+    serving: 'chicken breast',
+    caloriesPerServing: 300,
   },
   {
     name: 'Steak Serloin',
@@ -17,7 +17,7 @@ const foodOptions = [
   {
     name: 'Brown Rice',
     serving: 'cup',
-    caloriesPerServing: 210,
+    caloriesPerServing: 675,
   },
   {
     name: 'Greek Yogurt',
@@ -38,6 +38,16 @@ const foodOptions = [
     name: 'Cherry Totatoes',
     serving: 'handfull',
     caloriesPerServing: '30',
+  },
+  {
+    name: 'Protein Powder',
+    serving: 'scoop',
+    calories: '120',
+  },
+  {
+    name: 'Cashews',
+    serving: 'cup',
+    calories: '775',
   }
 ]
 
