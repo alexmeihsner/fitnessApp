@@ -57,7 +57,7 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
   const [selectedFoodLedger, setSelectedFoodLedger] = useState([])
-  const [selectedRun, setSelectedRun] = useState(null)
+  const [selectedRun, setSelectedRun] = useState([])
   const [deleteError, setDeleteError] = useState('')
   const [foodDeleteError, setFoodDeleteError] = useState('')
   const selectedRunEntry = selectedRun
@@ -116,6 +116,7 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
         }
 
         const data = await response.json()
+        data.every(n => setSelectedRun(n.run));
         setSelectedRun(data.run)
       } catch (error) {
         console.log('There was an error getting the selected date run', error)

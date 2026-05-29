@@ -267,15 +267,12 @@ def get_runs(date: str | None = None):
 
     activities = activities_response.json()
     print(activities)
-    today_run = next(
-        (
-            activity for activity in activities
-            if activity.get("type") == "Run" or activity.get("type") == "Walk"
-        ),
-        None,
-    )
+    runs = []
+    for activity in activities:
+        if activity.get("type") == "Run" or activity.get("type") == "Walk":
+            runs.append(activity)
 
-    return {"run": today_run}
+    return {"runs": runs}
 
 
 @app.get("/working")
