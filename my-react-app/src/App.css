@@ -326,6 +326,11 @@
   background: #fff0f3;
   color: #d6336c;
 }
+.workout-type-walk {
+  border-color: #12cfbf;
+  background: #00ffea;
+  color: #325c61;
+}
 
 @media (max-width: 576px) {
   .navbar .container {
