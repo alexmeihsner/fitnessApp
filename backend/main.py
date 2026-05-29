@@ -200,13 +200,10 @@ def get_activities():
     response = requests.get(url, headers=headers)
 
     if response.status_code != 200:
-        print(response.text)
-        print("didnt work")
         raise HTTPException(
             status_code=response.status_code,
             detail=response.text
         )
-    print("worked")
     return response.json()
 @app.get("/runs")
 def get_runs(date: str | None = None):
@@ -259,8 +256,8 @@ def get_runs(date: str | None = None):
         headers=headers,
         params=params,
     )
-    print("ACTIVITIES STATUS:", activities_response.status_code)
-    print("ACTIVITIES RESPONSE:", activities_response.text)
+    # print("ACTIVITIES STATUS:", activities_response.status_code)
+    # print("ACTIVITIES RESPONSE:", activities_response.text)
 
     if activities_response.status_code != 200:
         raise HTTPException(
