@@ -266,12 +266,13 @@ def get_runs(date: str | None = None):
         )
 
     activities = activities_response.json()
-    print(activities)
+    # print(activities)
     runs = []
     for activity in activities:
         if activity.get("type") == "Run" or activity.get("type") == "Walk":
             runs.append(activity)
 
+    print ("RUNS:", runs)
     return {"runs": runs}
 
 

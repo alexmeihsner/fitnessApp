@@ -53,6 +53,22 @@ function formatSelectedDate(dateKey) {
   })
 }
 
+function getRunsFromResponse(data) {
+  if (Array.isArray(data.runs)) {
+    return data.runs
+  }
+
+  if (Array.isArray(data.run)) {
+    return data.run
+  }
+
+  if (data.run) {
+    return [data.run]
+  }
+
+  return []
+}
+
 function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
@@ -116,7 +132,7 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
         }
 
         const data = await response.json()
-        setSelectedRuns(data.runs ?? [])
+        setSelectedRuns(getRunsFromResponse(data))
       } catch (error) {
         console.log('There was an error getting the selected date run', error)
         setSelectedRuns([])
