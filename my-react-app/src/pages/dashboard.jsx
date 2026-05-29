@@ -57,24 +57,24 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [selectedDate, setSelectedDate] = useState(getDateKey())
   const [selectedLedger, setSelectedLedger] = useState([])
   const [selectedFoodLedger, setSelectedFoodLedger] = useState([])
-  const [selectedRun, setSelectedRun] = useState([])
+  const [selectedRuns, setSelectedRuns] = useState([])
   const [deleteError, setDeleteError] = useState('')
   const [foodDeleteError, setFoodDeleteError] = useState('')
-  const selectedRunEntry = selectedRun
-    ? {
-        id: `strava-run-${selectedRun.id}`,
-        completedAt: formatRunCompletedAt(selectedRun.start_date),
-        name: selectedRun.name ?? 'Run',
-        type: 'run',
-        distance: formatRunDistance(selectedRun.distance),
-        duration: formatRunDuration(selectedRun.moving_time),
-        calories: getRunCalories(selectedRun),
-        source: 'strava',
-      }
-    : null
-  const displayedLedger = selectedRunEntry
-    ? [selectedRunEntry, ...selectedLedger]
-    : selectedLedger
+  const selectedRunEntries = selectedRuns.map((run) => {
+    const activityType = run.type?.toLowerCase() ?? 'run'
+
+    return {
+      id: `strava-${activityType}-${run.id}`,
+      completedAt: formatRunCompletedAt(run.start_date),
+      name: run.name ?? formatType(activityType),
+      type: activityType,
+      distance: formatRunDistance(run.distance),
+      duration: formatRunDuration(run.moving_time),
+      calories: getRunCalories(run),
+      source: 'strava',
+    }
+  })
+  const displayedLedger = [...selectedRunEntries, ...selectedLedger]
   const totalCalories = displayedLedger.reduce(
     (total, entry) => total + (entry.calories ?? 0),
     0,
@@ -107,7 +107,7 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   }, [selectedDate])
 
   useEffect(() => {
-    async function loadRunForDate() {
+    async function loadRunsForDate() {
       try {
         const response = await fetch(`${API_BASE_URL}/runs?date=${selectedDate}`)
 
@@ -116,15 +116,14 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
         }
 
         const data = await response.json()
-        data.every(n => setSelectedRun(n.run));
-        setSelectedRun(data.run)
+        setSelectedRuns(data.runs ?? [])
       } catch (error) {
         console.log('There was an error getting the selected date run', error)
-        setSelectedRun(null)
+        setSelectedRuns([])
       }
     }
 
-    loadRunForDate()
+    loadRunsForDate()
   }, [selectedDate])
 
   useEffect(() => {
