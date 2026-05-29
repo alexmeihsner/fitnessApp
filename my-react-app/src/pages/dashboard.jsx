@@ -78,6 +78,7 @@ function Dashboard({ typeOfWorkout, workoutsByDay, backendWorking }) {
   const [foodDeleteError, setFoodDeleteError] = useState('')
   const selectedRunEntries = selectedRuns.map((run) => {
     const activityType = run.type?.toLowerCase() ?? 'run'
+    activityType = activityType ?? 'walk';
 
     return {
       id: `strava-${activityType}-${run.id}`,
