@@ -42,12 +42,12 @@ const foodOptions = [
   {
     name: 'Protein Powder',
     serving: 'scoop',
-    calories: '120',
+    caloriesPerServing: '120',
   },
   {
     name: 'Cashews',
     serving: 'cup',
-    calories: '775',
+    caloriesPerServing: '775',
   }
 ]
 
