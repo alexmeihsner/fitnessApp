@@ -256,8 +256,6 @@ def get_runs(date: str | None = None):
         headers=headers,
         params=params,
     )
-    # print("ACTIVITIES STATUS:", activities_response.status_code)
-    # print("ACTIVITIES RESPONSE:", activities_response.text)
 
     if activities_response.status_code != 200:
         raise HTTPException(
@@ -266,13 +264,11 @@ def get_runs(date: str | None = None):
         )
 
     activities = activities_response.json()
-    # print(activities)
     runs = []
     for activity in activities:
         if activity.get("type") == "Run" or activity.get("type") == "Walk":
             runs.append(activity)
 
-    print ("RUNS:", runs)
     return {"runs": runs}
 
 
