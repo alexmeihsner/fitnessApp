@@ -269,6 +269,7 @@ def get_runs(date: str | None = None):
         )
 
     activities = activities_response.json()
+    print(activities)
     today_run = next(
         (
             activity for activity in activities
