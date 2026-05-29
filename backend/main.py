@@ -272,7 +272,7 @@ def get_runs(date: str | None = None):
     today_run = next(
         (
             activity for activity in activities
-            if activity.get("type") == "Run"
+            if activity.get("type") == "Run" or activity.get("type") == "Walk"
         ),
         None,
     )
